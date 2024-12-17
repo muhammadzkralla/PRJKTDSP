@@ -24,6 +24,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,6 +40,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.zkrallah.projectdsp.R
+import com.zkrallah.projectdsp.presentation.dialog.InformationDialog
 import com.zkrallah.projectdsp.service.BluetoothLeService
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,6 +50,9 @@ fun DetailsScreen(
     bluetoothLeService: BluetoothLeService? = null,
     navController: NavHostController = rememberNavController(),
 ) {
+    val showDialog = remember { mutableStateOf(false) }
+    val dialogData = remember { mutableStateOf<String?>(null)}
+
     Scaffold(topBar = {
         CenterAlignedTopAppBar(
             title = { Text("Home", fontSize = 24.sp, fontWeight = FontWeight.Bold) },
@@ -169,7 +175,10 @@ fun DetailsScreen(
                             .fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
-                        OutlinedButton(onClick = { }) {
+                        OutlinedButton(onClick = {
+                            showDialog.value = true
+                            dialogData.value = "DHT Sensor"
+                        }) {
                             Text("view more", fontSize = 12.sp)
                         }
                     }
@@ -236,12 +245,22 @@ fun DetailsScreen(
                             .fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
-                        OutlinedButton(onClick = { }) {
+                        OutlinedButton(onClick = {
+                            showDialog.value = true
+                            dialogData.value = "Heart Rate Sensor"
+                        }) {
                             Text("view more", fontSize = 12.sp)
                         }
                     }
                 }
 
+            }
+        }
+
+        if (showDialog.value && dialogData.value != null) {
+            InformationDialog(title = dialogData.value!!) {
+                showDialog.value = false
+                dialogData.value = null
             }
         }
     }
