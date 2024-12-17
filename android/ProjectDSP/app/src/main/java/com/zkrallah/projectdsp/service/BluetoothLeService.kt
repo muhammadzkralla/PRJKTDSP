@@ -66,6 +66,19 @@ class BluetoothLeService : Service() {
         return START_STICKY
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        // Clean up resources
+        stopForeground(true)
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        // Stop the service when app is removed from memory
+        stopForeground(true)
+        stopSelf()
+    }
+
     /**
      * Binder class to expose the service to clients.
      */

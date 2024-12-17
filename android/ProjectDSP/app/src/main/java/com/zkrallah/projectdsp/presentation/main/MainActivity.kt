@@ -242,7 +242,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         bluetoothLeService?.disconnect()
-        if (isServiceBound) unbindService(serviceConnection)
+        if (isServiceBound) {
+            unbindService(serviceConnection)
+            isServiceBound = false
+        }
+        // Stop the service explicitly
+        stopService(Intent(this, BluetoothLeService::class.java))
         super.onDestroy()
     }
 
