@@ -28,6 +28,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.zkrallah.projectdsp.data.repositories.BleRepositoryImpl
 import com.zkrallah.projectdsp.service.BluetoothLeService
 import com.zkrallah.projectdsp.ui.theme.ProjectDSPTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -108,12 +109,15 @@ class MainActivity : ComponentActivity() {
         if (!scanning) {
             handler.postDelayed({
                 scanning = false
+                BleRepositoryImpl.isScanning.value = false
                 bluetoothLeScanner.stopScan(leScanCallback)
             }, 10000)
             scanning = true
+            BleRepositoryImpl.isScanning.value = true
             bluetoothLeScanner.startScan(leScanCallback)
         } else {
             scanning = false
+            BleRepositoryImpl.isScanning.value = false
             bluetoothLeScanner.stopScan(leScanCallback)
         }
     }

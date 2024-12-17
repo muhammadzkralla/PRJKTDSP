@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -38,7 +39,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.zkrallah.projectdsp.service.BluetoothLeService
 
@@ -46,19 +49,20 @@ import com.zkrallah.projectdsp.service.BluetoothLeService
 @Composable
 fun HomeScreen(
     homeViewModel: HomeViewModel = hiltViewModel(),
-    devices: List<BluetoothDevice>,
-    bluetoothLeService: BluetoothLeService?,
-    scan: () -> Unit
+    devices: List<BluetoothDevice> = emptyList(),
+    bluetoothLeService: BluetoothLeService? = null,
+    scan: () -> Unit = {}
 ) {
     val data = remember { mutableStateOf(TextFieldValue()) }
     val connectionStatus by homeViewModel.connectionStatus.collectAsState()
     val notifiableData by homeViewModel.notifiableData.collectAsState()
     val readableData by homeViewModel.readableData.collectAsState()
+    val isScanning by homeViewModel.isScanning.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("BLE Device Scanner") },
+                title = { Text("DSP NeoVim") },
                 colors = TopAppBarDefaults.mediumTopAppBarColors()
             )
         }
@@ -68,18 +72,18 @@ fun HomeScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
                 .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Connection Status Section
-            ConnectedDeviceSection(
-                deviceName = if (connectionStatus) "Connected" else "Disconnected",
-                onDisconnect = { bluetoothLeService?.disconnect() }
-            )
+//            ConnectedDeviceSection(
+//                deviceName = if (connectionStatus) "Connected" else "Disconnected",
+//                onDisconnect = { bluetoothLeService?.disconnect() }
+//            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Device List Section
-            if (!connectionStatus) {
+            if (isScanning) {
                 Text(
                     text = "Available Devices:",
                     style = MaterialTheme.typography.titleMedium,
@@ -102,14 +106,30 @@ fun HomeScreen(
             }
 
             // Scan Button
-            if (!connectionStatus) {
-                Button(
-                    onClick = { scan() },
-                    modifier = Modifier.fillMaxWidth()
+            if (!connectionStatus && !isScanning) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.Center // Center the button in the screen
                 ) {
-                    Text("Scan for Devices")
+                    Column {
+                        Text(
+                            text = "Click to start searching for devices",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Button(
+                            onClick = { scan() },
+                            modifier = Modifier.fillMaxWidth(0.7f)
+                        ) {
+                            Text("Search")
+                        }
+                    }
                 }
             }
+
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -251,6 +271,12 @@ private fun connectToDevice(address: String, bluetoothLeService: BluetoothLeServ
     } ?: run {
         Log.e(TAG, "BluetoothLe Service is not available.")
     }
+}
+
+@Preview("")
+@Composable
+fun Preview() {
+    HomeScreen()
 }
 
 const val TAG = "HomeScreen"
