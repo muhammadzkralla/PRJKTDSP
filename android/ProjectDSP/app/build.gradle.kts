@@ -91,7 +91,7 @@ dependencies {
     implementation("androidx.hilt:hilt-navigation-compose:1.0.0")
 
     // Coil
-    implementation("io.coil-kt:coil-compose:1.3.1")
+    implementation("io.coil-kt:coil-compose:2.2.2")
 
     // Datastore
     implementation("androidx.datastore:datastore-preferences:1.0.0")
