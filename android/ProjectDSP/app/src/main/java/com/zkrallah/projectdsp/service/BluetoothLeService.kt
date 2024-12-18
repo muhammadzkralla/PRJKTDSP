@@ -161,7 +161,16 @@ class BluetoothLeService : Service() {
             characteristic: BluetoothGattCharacteristic
         ) {
             Log.d(TAG, "onCharacteristicChanged: ${characteristic.uuid} with ${String(characteristic.value, Charsets.UTF_8)}")
-            BleRepositoryImpl.notifiableData.value = String(characteristic.value, Charsets.UTF_8)
+            when (characteristic.uuid.toString()) {
+                "abcd1234-ab12-ab12-ab12-ab1234567890" -> BleRepositoryImpl.humidity.value =
+                    String(characteristic.value, Charsets.UTF_8)
+
+                "abcd4321-ab12-ab12-ab12-ab1234567890" -> BleRepositoryImpl.temp.value =
+                    String(characteristic.value, Charsets.UTF_8)
+
+                "dcba1234-ab12-ab12-ab12-ab1234567890" -> BleRepositoryImpl.heartRate.value =
+                    String(characteristic.value, Charsets.UTF_8)
+            }
         }
 
         /**

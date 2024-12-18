@@ -137,15 +137,6 @@ fun HomeScreen(
                         ) {
                             Text("Search")
                         }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Button(
-                            onClick = { navController.navigate("details") },
-                            modifier = Modifier.fillMaxWidth(0.7f)
-                        ) {
-                            Text("Fake")
-                        }
                     }
                 }
             }
