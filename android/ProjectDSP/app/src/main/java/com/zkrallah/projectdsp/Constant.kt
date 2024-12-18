@@ -1,5 +1,7 @@
 package com.zkrallah.projectdsp
 
+import android.content.Context
+import android.widget.Toast
 import com.zkrallah.projectdsp.domain.models.BottomNavItem
 
 val SCREENS = listOf(
@@ -26,3 +28,6 @@ val SCREENS = listOf(
 val ROUTES = listOf(
     "details"
 )
+fun showToast(context: Context, message: String) {
+    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+}
