@@ -1,6 +1,7 @@
 /*
  *  Author : Ahmed Basem
  */
+ 
 // =======================================================================
 // =============================== INCLUDE ===============================
 // =======================================================================
@@ -61,83 +62,79 @@ NTPClient timeClient(ntpUDP, "time.nist.gov", 3600, 60000);
 // =======================================================================
 void handleDetectedObjects();
 void SayDetected();
+void RTC_display();
+void dhtRead();
 
-void RTC_display() {
-  char dow_matrix[7][10] = {"SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"};
-  byte x_pos[7] = {29, 29, 23, 11, 17, 29, 17};
-  static byte previous_dow = 0;
 
-  // Print day of the week
-  if (previous_dow != weekday(unix_epoch)) {
-    previous_dow = weekday(unix_epoch);
-    tft.fillRect(11, 55, 108, 14, ST7735_BLACK);     // Erase day from the display
-    tft.setCursor(x_pos[previous_dow - 1], 55);
-    tft.setTextColor(ST7735_CYAN, ST7735_BLACK);     // Set text color to cyan and black background
-    tft.print(dow_matrix[previous_dow - 1]);
-  }
-
-  // Print date
-  tft.setCursor(4, 79);
-  tft.setTextColor(ST7735_YELLOW, ST7735_BLACK);     // Set text color to yellow and black background
-  tft.printf("%02u-%02u-%04u", day(unix_epoch), month(unix_epoch), year(unix_epoch));
-
-  // Print time
-  tft.setCursor(16, 136);
-  tft.setTextColor(ST7735_GREEN, ST7735_BLACK);      // Set text color to green and black background
-  tft.printf("%02u:%02u:%02u", hour(unix_epoch), minute(unix_epoch), second(unix_epoch));
-}
-
-void setup() {
-  pinMode(BtnPin, INPUT);
-  Serial.begin(115200);
-  tft.initR(INITR_BLACKTAB);                           // Initialize a ST7735S chip, black tab
-  tft.fillScreen(ST7735_BLACK);                        // Fill screen with black color
-  tft.drawFastHLine(0, 44, tft.width(), ST7735_BLUE);  // Draw horizontal blue line at position (0, 44)
-  tft.setTextColor(ST7735_WHITE, ST7735_BLACK);        // Set text color to white and black background
-  tft.setTextSize(1);                                  // Text size = 1
-  tft.setCursor(19, 10);                               // Move cursor to position (43, 10) pixel
+void setup(void) {
+  Serial.begin(9600);
+  tft.initR(INITR_BLACKTAB);                           // initialize a ST7735S chip, black tab
+  tft.fillScreen(ST7735_BLACK);                        // fill screen with black color
+  tft.drawFastHLine(0, 44, tft.width(), ST7735_BLUE);  // draw horizontal blue line at position (0, 44)
+  tft.setTextColor(ST7735_WHITE, ST7735_BLACK);        // set text color to white and black background
+  tft.setTextSize(1);                                  // text size = 1
+  tft.setCursor(19, 10);                               // move cursor to position (43, 10) pixel
   tft.print("ESP8266 NodeMCU");
-  tft.setCursor(4, 27);                                // Move cursor to position (4, 27) pixel
+  tft.setCursor(4, 27);  // move cursor to position (4, 27) pixel
   tft.print("Wi-Fi Internet Clock");
-
-  WiFi.begin(ssid, password);  // Connect to Wi-Fi
-  unsigned long startAttemptTime = millis();
-
-  while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000) {
+  WiFi.begin(ssid, password);
+  Serial.println("");
+  Serial.print("Connecting.");
+  tft.setCursor(0, 54);  // move cursor to position (4, 27) pixel
+  tft.print("Connecting..");
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.println("Connecting to WiFi...");
+    Serial.print(".");
   }
-
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("Failed to connect to WiFi.");
-    return;
-  }
-
-  Serial.println("Connected to WiFi");
-  Serial.println(WiFi.localIP());                            // Print the ESP8266 IP address
-  server.on("/detected", HTTP_POST, handleDetectedObjects);  // Define POST handler for detected objects
-  server.begin();                                            // Start the web server
-
-  out = new AudioOutputI2SNoDAC();
-  out->SetOutputModeMono(true);
-  out->begin();
-
+  Serial.println("");
+  Serial.println("connected");
+  Serial.println(WiFi.localIP());  // Print the ESP8266 IP address
+  tft.print("connected");
+  delay(2000);
   tft.fillRect(0, 54, tft.width(), 8, ST7735_BLACK);
-  tft.drawFastHLine(0, 102, tft.width(), ST7735_BLUE);  // Draw horizontal blue line at position (0, 102)
-  tft.setTextSize(2);                                   // Text size = 2
-  tft.setTextColor(ST7735_MAGENTA, ST7735_BLACK);       // Set text color to magenta and black background
-  tft.setCursor(37, 112);                               // Move cursor to position (37, 112) pixel
+  tft.drawFastHLine(0, 102, tft.width(), ST7735_BLUE);  // draw horizontal blue line at position (0, 102)
+  tft.setTextSize(2);                                   // text size = 2
+  tft.setTextColor(ST7735_MAGENTA, ST7735_BLACK);       // set text color to magenta and black background
+  tft.setCursor(37, 112);                               // move cursor to position (37, 112) pixel
   tft.print("TIME:");
 
   timeClient.begin();
+  server.on("/detected", HTTP_POST, handleDetectedObjects);  // Define POST handler for detected objects
+  server.begin();                                            // Start the web server
+  out = new AudioOutputI2SNoDAC();
+  out->SetOutputModeMono(true);
+  out->begin();
 }
 
 void loop() {
   server.handleClient();  // Handle incoming HTTP requests
   timeClient.update();
-  unix_epoch = timeClient.getEpochTime();  // Get UNIX Epoch time
+  unix_epoch = timeClient.getEpochTime();  // get UNIX Epoch time
   RTC_display();
-  yield();  // Reset the watchdog timer to prevent resets during long tasks
+  delay(200);  // wait 200ms
+}
+
+void RTC_display() {
+  char dow_matrix[7][10] = { "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY" };
+  byte x_pos[7] = { 29, 29, 23, 11, 17, 29, 17 };
+  static byte previous_dow = 0;
+  // print day of the week
+  if (previous_dow != weekday(unix_epoch)) {
+    previous_dow = weekday(unix_epoch);
+    tft.fillRect(11, 55, 108, 14, ST7735_BLACK);  // draw rectangle (erase day from the display)
+    tft.setCursor(x_pos[previous_dow - 1], 55);
+    tft.setTextColor(ST7735_CYAN, ST7735_BLACK);  // set text color to cyan and black background
+    tft.print(dow_matrix[previous_dow - 1]);
+  }
+
+  // print date
+  tft.setCursor(4, 79);
+  tft.setTextColor(ST7735_YELLOW, ST7735_BLACK);  // set text color to yellow and black background
+  tft.printf("%02u-%02u-%04u", day(unix_epoch), month(unix_epoch), year(unix_epoch));
+  // print time
+  tft.setCursor(16, 136);
+  tft.setTextColor(ST7735_GREEN, ST7735_BLACK);  // set text color to green and black background
+  tft.printf("%02u:%02u:%02u", hour(unix_epoch), minute(unix_epoch), second(unix_epoch));
 }
 
 void SayDetected() {
@@ -156,4 +153,20 @@ void handleDetectedObjects() {
     }
   }
   server.send(200, "text/plain", "Received objects");
+}
+void dhtRead() {
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+    tempT = dht.readTemperature();
+    humdT = dht.readHumidity();
+    if (isnan(tempT) || isnan(humdT)) {
+      Serial.println("Failed to read from DHT sensor!");
+    } else {
+      temp = tempT;
+      humd = humdT;
+      Serial.print(temp);
+      Serial.println(humd);
+    }
+  }
 }
