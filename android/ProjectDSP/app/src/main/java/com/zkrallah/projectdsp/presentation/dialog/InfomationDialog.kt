@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.zkrallah.projectdsp.R
+import com.zkrallah.projectdsp.presentation.intro.LoaderIntro
 
 @Composable
 fun InformationDialog(
@@ -67,9 +68,8 @@ fun InformationDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Image(
-                    painter = painterResource(id = R.drawable.ic_check),
-                    contentDescription = "Success",
+                LoaderIntro(
+                    image = R.raw.bluetooth1,
                     modifier = Modifier
                         .size(100.dp)
                         .padding(4.dp)
