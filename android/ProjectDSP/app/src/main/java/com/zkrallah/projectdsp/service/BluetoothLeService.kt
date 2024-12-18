@@ -146,7 +146,8 @@ class BluetoothLeService : Service() {
         ) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 Log.d(TAG, "onCharacteristicRead: ${characteristic.uuid} with ${String(characteristic.value, Charsets.UTF_8)}")
-                BleRepositoryImpl.readableData.value = String(characteristic.value, Charsets.UTF_8)
+                // Removed as there's no readable data in the use cases
+                // BleRepositoryImpl.readableData.value = String(characteristic.value, Charsets.UTF_8)
             } else Log.d(TAG, "onCharacteristicRead: Failed to read characteristic")
         }
 

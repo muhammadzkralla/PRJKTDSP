@@ -25,7 +25,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -49,10 +48,7 @@ fun HomeScreen(
     scan: () -> Unit = {},
     navController: NavHostController = rememberNavController()
 ) {
-//    val data = remember { mutableStateOf(TextFieldValue()) }
     val connectionStatus by homeViewModel.connectionStatus.collectAsState()
-//    val notifiableData by homeViewModel.notifiableData.collectAsState()
-//    val readableData by homeViewModel.readableData.collectAsState()
     val isScanning by homeViewModel.isScanning.collectAsState()
 
     Scaffold(
@@ -121,8 +117,8 @@ fun HomeScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Column (
-                        horizontalAlignment = Alignment.CenterHorizontally, // Aligns content in the Column
-                        verticalArrangement = Arrangement.Center // Ensures items are centered vertically
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
                         Text(
                             text = "Click to start searching for devices",
@@ -146,87 +142,6 @@ fun HomeScreen(
             // Data Transfer Section
             if (connectionStatus) {
                 navController.navigate("details")
-//                Text(
-//                    text = "Notifications:",
-//                    style = MaterialTheme.typography.titleMedium,
-//                    modifier = Modifier.align(Alignment.Start)
-//                )
-//
-//                Spacer(modifier = Modifier.height(8.dp))
-//
-//                Text(
-//                    text = notifiableData,
-//                    style = MaterialTheme.typography.bodyMedium,
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .padding(8.dp)
-//                        .background(
-//                            color = MaterialTheme.colorScheme.surfaceVariant,
-//                            shape = RoundedCornerShape(8.dp)
-//                        )
-//                        .padding(8.dp)
-//                )
-//
-//                Spacer(modifier = Modifier.height(16.dp))
-//
-//                Row(
-//                    verticalAlignment = Alignment.CenterVertically,
-//                    modifier = Modifier.fillMaxWidth()
-//                ) {
-//                    OutlinedTextField(
-//                        value = data.value,
-//                        onValueChange = { data.value = it },
-//                        label = { Text("Enter Data") },
-//                        singleLine = true,
-//                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-//                        modifier = Modifier.weight(1f)
-//                    )
-//
-//                    Spacer(modifier = Modifier.width(8.dp))
-//
-//                    Button(
-//                        onClick = {
-//                            BluetoothLeService.chars["abcd4321-ab12-ab12-ab12-ab1234567890"]?.let {
-//                                bluetoothLeService?.writeCharacteristic(it, data.value.text)
-//                            }
-//                        }
-//                    ) {
-//                        Text("SEND")
-//                    }
-//                }
-//
-//                Spacer(modifier = Modifier.height(16.dp))
-//
-//                Row(
-//                    verticalAlignment = Alignment.CenterVertically,
-//                    horizontalArrangement = Arrangement.SpaceBetween,
-//                    modifier = Modifier.fillMaxWidth()
-//                ) {
-//                    Text(
-//                        text = readableData,
-//                        style = MaterialTheme.typography.bodyMedium,
-//                        modifier = Modifier
-//                            .weight(1f)
-//                            .padding(8.dp)
-//                            .background(
-//                                color = MaterialTheme.colorScheme.surfaceVariant,
-//                                shape = RoundedCornerShape(8.dp)
-//                            )
-//                            .padding(8.dp)
-//                    )
-//
-//                    Spacer(modifier = Modifier.width(8.dp))
-//
-//                    Button(
-//                        onClick = {
-//                            BluetoothLeService.chars["1234abcd-ab12-ab12-ab12-ab1234567890"]?.let {
-//                                bluetoothLeService?.readCharacteristic(it)
-//                            }
-//                        }
-//                    ) {
-//                        Text("RECEIVE")
-//                    }
-//                }
             }
         }
     }
@@ -251,23 +166,6 @@ fun DeviceItem(device: BluetoothDevice, service: BluetoothLeService?) {
                 style = MaterialTheme.typography.titleMedium
             )
             Text(text = device.address, style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-
-@Composable
-fun ConnectedDeviceSection(deviceName: String, onDisconnect: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Connection Status: $deviceName", style = MaterialTheme.typography.titleMedium)
-            TextButton(onClick = { onDisconnect() }) {
-                Text("Disconnect")
-            }
         }
     }
 }

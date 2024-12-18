@@ -8,6 +8,4 @@ object BleRepositoryImpl {
     val humidity = MutableStateFlow("")
     val temp = MutableStateFlow("")
     val heartRate = MutableStateFlow("")
-    val notifiableData = MutableStateFlow("")
-    val readableData = MutableStateFlow("")
 }

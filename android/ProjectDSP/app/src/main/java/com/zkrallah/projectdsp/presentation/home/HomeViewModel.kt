@@ -7,6 +7,4 @@ import kotlinx.coroutines.flow.StateFlow
 class HomeViewModel : ViewModel() {
     val isScanning: StateFlow<Boolean> = BleRepositoryImpl.isScanning
     val connectionStatus: StateFlow<Boolean> = BleRepositoryImpl.connectionStatus
-    val notifiableData: StateFlow<String> = BleRepositoryImpl.notifiableData
-    val readableData: StateFlow<String> = BleRepositoryImpl.readableData
 }
