@@ -17,6 +17,12 @@
 #include <Adafruit_GFX.h>     // include Adafruit graphics library
 #include <Adafruit_ST7735.h>  // include Adafruit ST7735 TFT library
 
+// BLE
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
+
 // =======================================================================
 // =============================== DEFINES ===============================
 // =======================================================================
@@ -28,6 +34,12 @@
 #define TFT_RST D4  // TFT RST pin is connected to NodeMCU pin D4 (GPIO2)
 #define TFT_CS D8   // TFT CS  pin is connected to NodeMCU pin D3 (GPIO0)
 #define TFT_DC D2   // TFT DC  pin is connected to NodeMCU pin D2 (GPIO4)
+
+// chars and service UUIDs
+#define SERVICE_UUID "12345678-1234-1234-1234-123456789abc"
+#define TEMP_CHAR "abcd1234-ab12-ab12-ab12-ab1234567890"
+#define HUMIDITY_CHAR "abcd4321-ab12-ab12-ab12-ab1234567890"
+#define HEART_CHAR "dcba1234-ab12-ab12-ab12-ab1234567890"
 
 // =======================================================================
 // ============================= GLOBAL VARs =============================
@@ -65,6 +77,31 @@ void SayDetected();
 void RTC_display();
 void dhtRead();
 
+// server and chars instances
+BLEServer* pServer = nullptr;
+BLECharacteristic* temp_char = nullptr;
+BLECharacteristic* humidity_char = nullptr;
+BLECharacteristic* heart_char = nullptr;
+
+bool deviceConnected = false;
+uint32_t lastSentTime = 0;
+
+// connection callback
+class ServerCallbacks : public BLEServerCallbacks {
+  void onConnect(BLEServer* pServer) {
+    deviceConnected = true;
+    Serial.println("Device connected");
+  }
+
+  void onDisconnect(BLEServer* pServer) {
+    deviceConnected = false;
+    Serial.println("Device disconnected");
+
+    // restart advertising
+    pServer->startAdvertising();
+    Serial.println("Advertising restarted, waiting for a client to connect...");
+  }
+};
 
 void setup(void) {
   Serial.begin(9600);
@@ -104,6 +141,42 @@ void setup(void) {
   out = new AudioOutputI2SNoDAC();
   out->SetOutputModeMono(true);
   out->begin();
+
+  // initialize BLE
+  BLEDevice::init("DSP_NeoVim");
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new ServerCallbacks());
+
+  // create BLE Service
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+
+  // temp sensor char
+  temp_char = pService->createCharacteristic(
+                          TEMP_CHAR,
+                          BLECharacteristic::PROPERTY_NOTIFY
+                        );
+  temp_char->addDescriptor(new BLE2902());
+
+  // humidity sensor char
+  humidity_char = pService->createCharacteristic(
+                          HUMIDITY_CHAR,
+                          BLECharacteristic::PROPERTY_NOTIFY
+                        );
+  humidity_char->addDescriptor(new BLE2902());
+
+  // hear sensor char
+  heart_char = pService->createCharacteristic(
+                          HEART_CHAR,
+                          BLECharacteristic::PROPERTY_NOTIFY
+                        );
+  heart_char->addDescriptor(new BLE2902());
+
+  // start the service
+  pService->start();
+
+  // start advertising
+  pServer->getAdvertising()->start();
+  Serial.println("Waiting for a client to connect...");
 }
 
 void loop() {
@@ -112,6 +185,27 @@ void loop() {
   unix_epoch = timeClient.getEpochTime();  // get UNIX Epoch time
   RTC_display();
   delay(200);  // wait 200ms
+  
+  if (deviceConnected) {
+    
+    // send sensors data each 3 seconds
+    if (millis() - lastSentTime > 3000) {
+      lastSentTime = millis();
+
+      // read DHT sensor data
+      dhtRead();
+
+      // send the temp data via BLE
+      String data = String(temp, 2);
+      temp_char->setValue(data.c_str());
+      temp_char->notify();
+
+      // send the humidity data via BLE
+      String data = String(humd, 2);
+      humidity_char->setValue(data.c_str());
+      humidity_char->notify();
+    }
+  }
 }
 
 void RTC_display() {
