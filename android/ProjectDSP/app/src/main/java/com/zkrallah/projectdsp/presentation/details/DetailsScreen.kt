@@ -1,7 +1,7 @@
 package com.zkrallah.projectdsp.presentation.details
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,24 +11,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ExitToApp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -42,6 +42,7 @@ import androidx.navigation.compose.rememberNavController
 import com.zkrallah.projectdsp.R
 import com.zkrallah.projectdsp.presentation.dialog.InformationDialog
 import com.zkrallah.projectdsp.service.BluetoothLeService
+import com.zkrallah.projectdsp.showToast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,8 +51,17 @@ fun DetailsScreen(
     bluetoothLeService: BluetoothLeService? = null,
     navController: NavHostController = rememberNavController(),
 ) {
+    val context = LocalContext.current
+
     val showDialog = remember { mutableStateOf(false) }
     val dialogData = remember { mutableStateOf<String?>(null)}
+
+    val dhtNotifiable = remember { mutableStateOf(true) }
+    val heartNotifiable = remember { mutableStateOf(true) }
+
+    val humidity by detailsViewModel.humidity.collectAsState()
+    val temp by detailsViewModel.temp.collectAsState()
+    val heartRate by detailsViewModel.heartRate.collectAsState()
 
     Scaffold(topBar = {
         CenterAlignedTopAppBar(
@@ -61,7 +71,10 @@ fun DetailsScreen(
             )
         )
     }, floatingActionButton = {
-        FloatingActionButton(onClick = { bluetoothLeService?.disconnect() }, content = {
+        FloatingActionButton(onClick = {
+            bluetoothLeService?.disconnect()
+            navController.navigate("home")
+        }, content = {
             Image(
                 painter = painterResource(id = R.drawable.disconnect), contentDescription = "Disconnect"
             )
@@ -86,8 +99,18 @@ fun DetailsScreen(
 
                     Row {
                         Image(
-                            painter = painterResource(id = R.drawable.ic_bell_on),
-                            contentDescription = "Notifiable"
+                            painter = if (dhtNotifiable.value)
+                                painterResource(id = R.drawable.ic_bell_on)
+                            else
+                                painterResource(id = R.drawable.ic_bell_off),
+                            contentDescription = "Notifiable",
+                            modifier = Modifier.clickable(onClick = {
+                                dhtNotifiable.value = !dhtNotifiable.value
+                                if (dhtNotifiable.value)
+                                    showToast(context, "DHT Notifiable Enabled")
+                                else
+                                    showToast(context, "DHT Notifiable Disabled")
+                            })
                         )
 
                         Box(
@@ -130,7 +153,7 @@ fun DetailsScreen(
                             Spacer(modifier = Modifier.height(6.dp))
 
                             Text(
-                                text = "77.6",
+                                text = if (dhtNotifiable.value) humidity else "-",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.W400,
                                 modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -160,7 +183,7 @@ fun DetailsScreen(
                             Spacer(modifier = Modifier.height(6.dp))
 
                             Text(
-                                text = "22",
+                                text = if (dhtNotifiable.value) temp else "-",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.W400,
                                 modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -198,8 +221,18 @@ fun DetailsScreen(
 
                     Row {
                         Image(
-                            painter = painterResource(id = R.drawable.ic_bell_off),
-                            contentDescription = "Notifiable"
+                            painter = if (heartNotifiable.value)
+                                painterResource(id = R.drawable.ic_bell_on)
+                            else
+                                painterResource(id = R.drawable.ic_bell_off),
+                            contentDescription = "Notifiable",
+                            modifier = Modifier.clickable(onClick = {
+                                heartNotifiable.value = !heartNotifiable.value
+                                if (heartNotifiable.value)
+                                    showToast(context, "Heart Rate Notifiable Enabled")
+                                else
+                                    showToast(context, "Heart Rate Notifiable Disabled")
+                            })
                         )
 
                         Box(
@@ -232,7 +265,7 @@ fun DetailsScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "142",
+                        text = if (heartNotifiable.value) heartRate else "-",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.W400,
                         modifier = Modifier.align(Alignment.CenterHorizontally)
