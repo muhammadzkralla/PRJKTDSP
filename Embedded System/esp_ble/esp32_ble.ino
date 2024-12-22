@@ -1,118 +1,127 @@
+// BLE
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
+#include <DHT.h>
 
-#define SERVICE_UUID           "12345678-1234-1234-1234-123456789abc"
-#define SENSOR_CHARACTERISTIC_UUID "abcd1234-ab12-ab12-ab12-ab1234567890"
-#define COMMAND_CHARACTERISTIC_UUID "abcd4321-ab12-ab12-ab12-ab1234567890"
-#define READ_CHARACTERISTIC_UUID "1234abcd-ab12-ab12-ab12-ab1234567890"
 
+#define DHTPIN 4
+#define DHTTYPE DHT22
+
+// chars and service UUIDs
+#define SERVICE_UUID "12345678-1234-1234-1234-123456789abc"
+#define TEMP_CHAR "abcd1234-ab12-ab12-ab12-ab1234567890"
+#define HUMIDITY_CHAR "abcd4321-ab12-ab12-ab12-ab1234567890"
+#define HEART_CHAR "dcba1234-ab12-ab12-ab12-ab1234567890"
+
+DHT dht(DHTPIN, DHTTYPE);
+
+// server and chars instances
 BLEServer* pServer = nullptr;
-BLECharacteristic* pSensorCharacteristic = nullptr;
-BLECharacteristic* pCommandCharacteristic = nullptr;
-BLECharacteristic* pReadCharacteristic = nullptr;
+BLECharacteristic* temp_char = nullptr;
+BLECharacteristic* humidity_char = nullptr;
+BLECharacteristic* heart_char = nullptr;
 
+float temp = 0.0;
+float humd = 0.0;
+float tempT;
+float humdT;
+unsigned long previousMillis = 0;
+const long interval = 10000;
 bool deviceConnected = false;
 uint32_t lastSentTime = 0;
-float healthSensorData = 0.0;
 
+// connection callback
 class ServerCallbacks : public BLEServerCallbacks {
-    void onConnect(BLEServer* pServer) {
-        deviceConnected = true;
-        Serial.println("Device connected");
-    }
+  void onConnect(BLEServer* pServer) {
+    deviceConnected = true;
+    Serial.println("Device connected");
+  }
 
-    void onDisconnect(BLEServer* pServer) {
-        deviceConnected = false;
-        Serial.println("Device disconnected");
+  void onDisconnect(BLEServer* pServer) {
+    deviceConnected = false;
+    Serial.println("Device disconnected");
 
-        // Restart advertising
-        pServer->startAdvertising();
-        Serial.println("Advertising restarted, waiting for a client to connect...");
-    }
+    // restart advertising
+    pServer->startAdvertising();
+    Serial.println("Advertising restarted, waiting for a client to connect...");
+  }
 };
 
-class CommandCallbacks : public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic* pCharacteristic) {
-        String value = pCharacteristic->getValue().c_str();
 
-        if (value.length() > 0) {
-            Serial.print("Received command: ");
-            for (int i = 0; i < value.length(); i++) {
-                Serial.print(value[i]);
-            }
-            Serial.println();
+void setup(void) {
+  Serial.begin(9600);
+  Serial.println(F("DHTxx test!"));
+  dht.begin();
 
-            // Handle the command, for example:
-            if (value == "START") {
-                Serial.println("Starting sensor monitoring...");
-                // Implement the start command
-            } else if (value == "STOP") {
-                Serial.println("Stopping sensor monitoring...");
-                // Implement the stop command
-            }
-        }
-    }
-};
+  // initialize BLE
+  BLEDevice::init("DSP_NeoVim");
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new ServerCallbacks());
 
-void setup() {
-    Serial.begin(115200);
-    
-    // Initialize BLE
-    BLEDevice::init("ESP32_Health_Device");
-    pServer = BLEDevice::createServer();
-    pServer->setCallbacks(new ServerCallbacks());
+  // create BLE Service
+  BLEService* pService = pServer->createService(SERVICE_UUID);
 
-    // Create BLE Service
-    BLEService *pService = pServer->createService(SERVICE_UUID);
+  // temp sensor char
+  temp_char = pService->createCharacteristic(
+    TEMP_CHAR,
+    BLECharacteristic::PROPERTY_NOTIFY);
+  temp_char->addDescriptor(new BLE2902());
 
-    // Create Sensor Data Characteristic
-    pSensorCharacteristic = pService->createCharacteristic(
-                            SENSOR_CHARACTERISTIC_UUID,
-                            BLECharacteristic::PROPERTY_NOTIFY
-                          );
-    pSensorCharacteristic->addDescriptor(new BLE2902());
+  // humidity sensor char
+  humidity_char = pService->createCharacteristic(
+    HUMIDITY_CHAR,
+    BLECharacteristic::PROPERTY_NOTIFY);
+  humidity_char->addDescriptor(new BLE2902());
 
-    // Create Command Characteristic
-    pCommandCharacteristic = pService->createCharacteristic(
-                             COMMAND_CHARACTERISTIC_UUID,
-                             BLECharacteristic::PROPERTY_WRITE
-                           );
-    pCommandCharacteristic->addDescriptor(new BLE2902());
-    pCommandCharacteristic->setCallbacks(new CommandCallbacks());
+  // hear sensor char
+  heart_char = pService->createCharacteristic(
+    HEART_CHAR,
+    BLECharacteristic::PROPERTY_NOTIFY);
+  heart_char->addDescriptor(new BLE2902());
 
-    // Create Read Data Characteristic
-    pReadCharacteristic = pService->createCharacteristic(
-                            READ_CHARACTERISTIC_UUID,
-                            BLECharacteristic::PROPERTY_READ
-                          );
-    pReadCharacteristic->addDescriptor(new BLE2902());
+  // start the service
+  pService->start();
 
-    // Start the service
-    pService->start();
-
-    // Start advertising
-    pServer->getAdvertising()->start();
-    Serial.println("Waiting for a client to connect...");
+  // start advertising
+  pServer->getAdvertising()->start();
+  Serial.println("Waiting for a client to connect...");
 }
 
 void loop() {
-    if (deviceConnected) {
-        if (millis() - lastSentTime > 5000) {
-            lastSentTime = millis();
-            
-            healthSensorData += 0.1;
-            if (healthSensorData > 100) healthSensorData = 0;
-
-            String data = String(healthSensorData, 2);
-            pSensorCharacteristic->setValue(data.c_str());
-            pSensorCharacteristic->notify();
-            
-            pReadCharacteristic->setValue(data.c_str());
-            
-            Serial.print("Sent sensor data: ");
-            Serial.println(data);
+  if (deviceConnected) {
+    // send sensors data each 3 seconds
+    if (millis() - lastSentTime > 3000) {
+      lastSentTime = millis();
+      // read DHT sensor data
+      unsigned long currentMillis = millis();
+      if (currentMillis - previousMillis >= interval) {
+        previousMillis = currentMillis;
+        tempT = dht.readTemperature();
+        humdT = dht.readHumidity();
+        if (isnan(tempT) || isnan(humdT)) {
+          Serial.println("Failed to read from DHT sensor!");
+        } else {
+          temp = tempT;
+          humd = humdT;
+          Serial.print(temp);
+          Serial.println(humd);
         }
+      }
+
+      // send the temp data via BLE
+      String data = String(humd, 2);
+      temp_char->setValue(data.c_str());
+      temp_char->notify();
+
+      // send the humidity data via BLE
+      String data1 = String(temp, 2);
+      humidity_char->setValue(data1.c_str());
+      Serial.println("Data Sent: " + data1);
+      humidity_char->notify();
     }
+  }
 }
+
+
