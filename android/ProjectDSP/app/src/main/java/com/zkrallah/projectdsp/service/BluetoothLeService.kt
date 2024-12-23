@@ -14,7 +14,9 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Binder
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.zkrallah.projectdsp.R
@@ -361,7 +363,10 @@ class BluetoothLeService : Service() {
 
                 if (gattCharacteristic.properties == BluetoothGattCharacteristic.PROPERTY_NOTIFY) {
                     Log.d(TAG, "Characteristic UUID: $uuid in service ${gattService.uuid} is notifiable")
-                    setCharacteristicNotification(gattCharacteristic)
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        // Enable notification for another characteristic after a delay
+                        setCharacteristicNotification(gattCharacteristic)
+                    }, 500)
                 }
 
                 if (gattCharacteristic.properties == BluetoothGattCharacteristic.PROPERTY_WRITE) {
