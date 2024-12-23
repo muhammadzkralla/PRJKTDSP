@@ -27,7 +27,7 @@ import java.util.UUID
  * and handling notifications.
  */
 @SuppressLint("MissingPermission")
-@Suppress("DEPRECATION")
+@Suppress("DEPRECATION", "UNUSED")
 class BluetoothLeService : Service() {
 
     private var bluetoothAdapter: BluetoothAdapter? = null
@@ -299,12 +299,29 @@ class BluetoothLeService : Service() {
         bluetoothGatt?.let { gatt ->
             gatt.setCharacteristicNotification(characteristic, true)
 
-            // This is specific to Heart Rate Measurement.
+            // This is specific to Humidity Measurement.
             if (UUID.fromString("abcd1234-ab12-ab12-ab12-ab1234567890") == characteristic.uuid) {
                 val descriptor = characteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"))
                 descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                 gatt.writeDescriptor(descriptor)
             }
+
+            // This is specific to Temp Measurement.
+            if (UUID.fromString("abcd4321-ab12-ab12-ab12-ab1234567890") == characteristic.uuid) {
+                val descriptor = characteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"))
+                descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                val writeResult = gatt.writeDescriptor(descriptor)
+                Log.d(TAG, "Descriptor write for temperature: $writeResult")
+            }
+
+            // This is specific to Heart Measurement.
+            if (UUID.fromString("dcba1234-ab12-ab12-ab12-ab1234567890") == characteristic.uuid) {
+                val descriptor = characteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"))
+                descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                val writeResult = gatt.writeDescriptor(descriptor)
+                Log.d(TAG, "Descriptor write for temperature: $writeResult")
+            }
+
         } ?: run {
             Log.w(TAG, "BluetoothGatt not initialized")
         }
